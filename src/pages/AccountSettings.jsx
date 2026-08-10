@@ -60,7 +60,7 @@ const AccountSettings = () => {
         username,
         bio,
         avatar_url: avatarUrl,
-        updated_at: new Date()
+        updated_at: new Date().toISOString() // Fixed: converted Date object to ISO string
       });
 
       if (error) throw error;
