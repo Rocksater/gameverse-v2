@@ -1,0 +1,211 @@
+.gv-navbar {
+  position: relative;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  height: 70px;
+  background-color: rgba(11, 15, 20, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--gv-border);
+  display: flex;
+  align-items: center;
+  transition: var(--gv-transition);
+  box-sizing: border-box;
+}
+
+.gv-navbar-container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+/* Brand / Logo */
+.gv-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.gv-brand-icon {
+  font-size: 1.5rem;
+  color: var(--gv-secondary);
+  filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.4));
+  flex-shrink: 0;
+}
+
+.gv-brand-text {
+  background: linear-gradient(135deg, var(--gv-text) 30%, var(--gv-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gv-brand-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  background-color: var(--gv-primary);
+  color: var(--gv-text);
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--gv-radius-sm);
+  letter-spacing: 1px;
+}
+
+/* Desktop Navigation Links */
+.gv-desktop-nav {
+  display: flex;
+  align-items: center;
+}
+
+.gv-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gv-nav-link {
+  text-decoration: none;
+  color: var(--gv-muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: var(--gv-transition);
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--gv-radius-sm);
+}
+
+.gv-nav-link:hover {
+  color: var(--gv-text);
+}
+
+.gv-nav-link.active {
+  color: var(--gv-secondary);
+  background-color: rgba(34, 211, 238, 0.08);
+}
+
+/* Auth Actions */
+.gv-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.gv-btn-login {
+  color: var(--gv-text);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: var(--gv-radius-md);
+  transition: var(--gv-transition);
+}
+
+.gv-btn-login:hover {
+  color: var(--gv-secondary);
+}
+
+.gv-btn-register {
+  background: linear-gradient(135deg, var(--gv-primary), #6d28d9);
+  color: var(--gv-text);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.55rem 1.2rem;
+  border-radius: var(--gv-radius-md);
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.35);
+  transition: var(--gv-transition);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gv-btn-register:hover {
+  filter: brightness(1.15);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.55);
+  transform: translateY(-1px);
+}
+
+/* Mobile Hamburger Button */
+.gv-mobile-toggle {
+  display: none;
+  background: none;
+  border: 1px solid var(--gv-border);
+  color: var(--gv-text);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: var(--gv-radius-sm);
+  align-items: center;
+  justify-content: center;
+  transition: var(--gv-transition);
+  z-index: 1001;
+}
+
+.gv-mobile-toggle:hover {
+  border-color: var(--gv-secondary);
+  color: var(--gv-secondary);
+}
+
+/* Mobile Responsive Drawer */
+@media (max-width: 768px) {
+  .gv-mobile-toggle {
+    display: flex;
+  }
+
+  .gv-desktop-nav,
+  .gv-nav-actions {
+    display: none !important;
+  }
+
+  .gv-mobile-menu {
+    position: absolute;
+    top: 70px;
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+    background-color: var(--gv-card);
+    border-bottom: 1px solid var(--gv-border);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    z-index: 999;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  }
+
+  .gv-mobile-menu .gv-nav-link {
+    font-size: 1.05rem;
+    padding: 0.6rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .gv-mobile-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--gv-border);
+  }
+
+  .gv-mobile-actions .gv-btn-login,
+  .gv-mobile-actions .gv-btn-register {
+    width: 100%;
+    text-align: center;
+    box-sizing: border-box;
+  }
+}
