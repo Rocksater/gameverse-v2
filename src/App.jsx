@@ -4,6 +4,9 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import PublicLayout from './layouts/PublicLayout';
 import AppLayout from './layouts/AppLayout';
 
+// Components
+import ProtectedRoute from './components/ProtectedRoute'; // <-- ADDED IMPORT
+
 // Public & Auth Pages
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
@@ -38,14 +41,16 @@ function App() {
 
           {/* Authenticated / App Routes */}
           <Route element={<AppLayout />}>
-            <Route path="/home" element={<Home />} />
-            <Route path="/explore" element={<Explore />} />
-            <Route path="/trending" element={<Trending />} />
-            <Route path="/communities" element={<Communities />} />
-            <Route path="/easter-eggs" element={<EasterEggs />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/settings" element={<AccountSettings />} />
+            <Route element={<ProtectedRoute />}> {/* <-- WRAPPED AUTH ROUTES */}
+              <Route path="/home" element={<Home />} />
+              <Route path="/explore" element={<Explore />} />
+              <Route path="/trending" element={<Trending />} />
+              <Route path="/communities" element={<Communities />} />
+              <Route path="/easter-eggs" element={<EasterEggs />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/settings" element={<AccountSettings />} />
+            </Route>
           </Route>
 
           {/* Fallback 404 Route */}
@@ -57,4 +62,3 @@ function App() {
 }
 
 export default App;
-
