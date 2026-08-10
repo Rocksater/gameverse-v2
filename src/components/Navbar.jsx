@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoGameControllerOutline, IoMenu, IoClose } from 'react-icons/io5';
-import { FaCompass, FaFire, FaGamepad } from 'react-icons/fa6';
+import { FaCompass, FaFire, FaGamepad, FaUser, FaGear, FaRightFromBracket, FaTableCells } from 'react-icons/fa6';
+import { useAuth } from '../context/AuthContext';
 import './Navbar.css';
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
@@ -58,12 +60,31 @@ const Navbar = () => {
 
         {/* Desktop Actions */}
         <div className="gv-nav-actions">
-          <Link to="/login" className="gv-btn-login">
-            Sign In
-          </Link>
-          <Link to="/register" className="gv-btn-register">
-            Join Now
-          </Link>
+          {user ? (
+            <>
+              <Link to="/dashboard" className="gv-nav-link">
+                <FaTableCells /> Dashboard
+              </Link>
+              <Link to="/profile" className="gv-nav-link">
+                <FaUser /> Profile
+              </Link>
+              <Link to="/settings" className="gv-nav-link">
+                <FaGear /> Settings
+              </Link>
+              <button onClick={signOut} className="gv-btn-login">
+                <FaRightFromBracket /> Sign Out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="gv-btn-login">
+                Sign In
+              </Link>
+              <Link to="/register" className="gv-btn-register">
+                Join Now
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Hamburger Toggle Button */}
@@ -115,20 +136,57 @@ const Navbar = () => {
             </NavLink>
 
             <div className="gv-mobile-actions">
-              <Link
-                to="/login"
-                className="gv-btn-login"
-                onClick={closeMobileMenu}
-              >
-                Sign In
-              </Link>
-              <Link
-                to="/register"
-                className="gv-btn-register"
-                onClick={closeMobileMenu}
-              >
-                Join Now
-              </Link>
+              {user ? (
+                <>
+                  <Link
+                    to="/dashboard"
+                    className="gv-nav-link"
+                    onClick={closeMobileMenu}
+                  >
+                    <FaTableCells /> Dashboard
+                  </Link>
+                  <Link
+                    to="/profile"
+                    className="gv-nav-link"
+                    onClick={closeMobileMenu}
+                  >
+                    <FaUser /> Profile
+                  </Link>
+                  <Link
+                    to="/settings"
+                    className="gv-nav-link"
+                    onClick={closeMobileMenu}
+                  >
+                    <FaGear /> Settings
+                  </Link>
+                  <button
+                    onClick={() => {
+                      signOut();
+                      closeMobileMenu();
+                    }}
+                    className="gv-btn-login"
+                  >
+                    <FaRightFromBracket /> Sign Out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="gv-btn-login"
+                    onClick={closeMobileMenu}
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="gv-btn-register"
+                    onClick={closeMobileMenu}
+                  >
+                    Join Now
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         )}
