@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { IoGameControllerOutline, IoMenu, IoClose } from 'react-icons/io5';
 import { FaCompass, FaFire, FaGamepad, FaUser, FaGear, FaRightFromBracket, FaTableCells } from 'react-icons/fa6';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -62,6 +63,7 @@ const Navbar = () => {
         <div className="gv-nav-actions">
           {user ? (
             <>
+              <NotificationBell />
               <Link to="/dashboard" className="gv-nav-link">
                 <FaTableCells /> Dashboard
               </Link>
@@ -138,6 +140,9 @@ const Navbar = () => {
             <div className="gv-mobile-actions">
               {user ? (
                 <>
+                  <div style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 0' }}>
+                    <NotificationBell />
+                  </div>
                   <Link
                     to="/dashboard"
                     className="gv-nav-link"

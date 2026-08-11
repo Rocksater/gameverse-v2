@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../services/supabaseClient';
+import { useAuth } from '../context/AuthContext';
 import PostCard from '../components/PostCard';
 import CreatePostModal from '../components/CreatePostModal';
 import { FaPlus } from 'react-icons/fa6';
 
 const Home = () => {
+  const { user } = useAuth();
   const [feedItems, setFeedItems] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -100,23 +102,25 @@ const Home = () => {
     <div className="gv-page">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h2 style={{ margin: 0 }}>Gaming Feed</h2>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.6rem 1.2rem',
-            backgroundColor: 'var(--gv-primary)',
-            color: 'white',
-            borderRadius: '6px',
-            border: 'none',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-          }}
-        >
-          <FaPlus /> Create Post
-        </button>
+        {user && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.6rem 1.2rem',
+              backgroundColor: 'var(--gv-primary)',
+              color: 'white',
+              borderRadius: '6px',
+              border: 'none',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+            }}
+          >
+            <FaPlus /> Create Post
+          </button>
+        )}
       </div>
 
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
