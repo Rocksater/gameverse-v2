@@ -1,16 +1,41 @@
-# React + Vite
+# 🎮 GameVerse-v2
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> A modern, full-stack gaming social platform built with **React**, **Vite**, **Tailwind CSS / Custom CSS**, and **Supabase**. Share gaming posts, unlock secret easter egg vaults, interact in real-time, and manage creator analytics.
 
-Currently, two official plugins are available:
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)
+![Vite](https://img.shields.io/badge/Vite-8.0-646CFF?logo=vite)
+![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?logo=supabase)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## ✨ Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+* 🔐 **Authentication & RLS**: Complete user sign-up, login, password recovery, and secure Row Level Security (RLS) policies.
+* 📝 **Social Feed**: Create, view, like, and comment on gaming posts with responsive media layouts.
+* 🥚 **Easter Egg Vault**: Discover hidden secrets and interactive vault entries scattered across the application.
+* 🔔 **Real-Time Notifications**: Instant updates via Supabase WebSocket channels when users interact with your content.
+* 📊 **Creator Analytics Dashboard**: Track total posts, secret vault unlocks, comment activity, and aggregate post engagement.
+* 🛡️ **Graceful Fallbacks & Guardrails**: Integrated React Error Boundary and auth-protected UI routes for smooth guest vs. user experiences.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🛠️ Tech Stack
+
+| Tier | Technology |
+| :--- | :--- |
+| **Frontend Framework** | React + React Router v6 |
+| **Bundler & Build Tool** | Vite v8 (Rolldown) |
+| **Backend & Database** | Supabase (PostgreSQL + Auth + Realtime Replication) |
+| **UI Components & Icons** | Framer Motion, React Icons |
+| **Styling** | Custom CSS Variables / Dark Theme |
+
+---
+
+## 🚀 Quick Start
+
+### 1. Clone the Repository
+
+```bash
+git clone [https://github.com/Rocksater/gameverse-v2.git](https://github.com/Rocksater/gameverse-v2.git)
+cd gameverse-v2
