@@ -59,7 +59,7 @@ const Navbar = () => {
           </ul>
         </nav>
 
-        {/* Desktop Actions */}
+        {/* Actions Header Section */}
         <div className="gv-nav-actions">
           {user ? (
             <>
@@ -140,9 +140,6 @@ const Navbar = () => {
             <div className="gv-mobile-actions">
               {user ? (
                 <>
-                  <div style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 0' }}>
-                    <NotificationBell />
-                  </div>
                   <Link
                     to="/dashboard"
                     className="gv-nav-link"
