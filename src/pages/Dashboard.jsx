@@ -19,10 +19,10 @@ const Dashboard = () => {
     try {
       setLoading(true);
 
-      // 1. Fetch User Posts & Likes/Comments associated with them
+      // 1. Fetch User Posts
       const { data: posts, error: postsError } = await supabase
         .from('posts')
-        .select('id, title, created_at')
+        .select('id, title, content, created_at')
         .eq('user_id', user.id);
 
       if (postsError) throw postsError;
@@ -39,24 +39,33 @@ const Dashboard = () => {
 
       const eggIds = (eggs || []).map((e) => e.id);
 
+      // Construct dynamic OR filters to prevent empty .in() syntax errors
+      const filterConditions = [];
+      if (postIds.length > 0) filterConditions.push(`post_id.in.(${postIds.join(',')})`);
+      if (eggIds.length > 0) filterConditions.push(`easter_egg_id.in.(${eggIds.join(',')})`);
+
       // 3. Count total likes for user's posts & eggs
       let likesCount = 0;
-      if (postIds.length > 0 || eggIds.length > 0) {
-        const { count } = await supabase
+      if (filterConditions.length > 0) {
+        const { count, error: likesError } = await supabase
           .from('post_likes')
           .select('*', { count: 'exact', head: true })
-          .or(`post_id.in.(${postIds.join(',')}),easter_egg_id.in.(${eggIds.join(',')})`);
-        likesCount = count || 0;
+          .or(filterConditions.join(','));
+        
+        if (likesError) console.error('Likes query error:', likesError.message);
+        else likesCount = count || 0;
       }
 
-      // 4. Count total comments for user's posts & eggs
+      // 4. Count total comments for user's posts & eggs (using public.comments table schema)
       let commentsCount = 0;
-      if (postIds.length > 0 || eggIds.length > 0) {
-        const { count } = await supabase
-          .from('post_comments')
+      if (filterConditions.length > 0) {
+        const { count, error: commentsError } = await supabase
+          .from('comments')
           .select('*', { count: 'exact', head: true })
-          .or(`post_id.in.(${postIds.join(',')}),easter_egg_id.in.(${eggIds.join(',')})`);
-        commentsCount = count || 0;
+          .or(filterConditions.join(','));
+        
+        if (commentsError) console.error('Comments query error:', commentsError.message);
+        else commentsCount = count || 0;
       }
 
       setMetrics({
@@ -92,7 +101,9 @@ const Dashboard = () => {
         <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
           <FaChartLine style={{ color: 'var(--gv-primary)' }} /> Creator Analytics Dashboard
         </h2>
-        <p style={{ color: 'var(--gv-muted)', margin: '0.25rem 0 0 0' }}>Track performance across your posts, secrets, and audience engagement</p>
+        <p style={{ color: 'var(--gv-muted)', margin: '0.25rem 0 0 0' }}>
+          Track performance across your posts, secrets, and audience engagement
+        </p>
       </div>
 
       {/* Analytics Grid */}
@@ -141,7 +152,7 @@ const Dashboard = () => {
                 padding: '1rem 1.25rem',
                 borderBottom: index !== recentActivity.length - 1 ? '1px solid var(--gv-border)' : 'none',
                 display: 'flex',
-                justifyContent: 'space-between',
+                justifySpaceBetween: 'space-between',
                 alignItems: 'center',
               }}
             >
@@ -159,7 +170,9 @@ const Dashboard = () => {
                 >
                   {item.type}
                 </span>
-                <strong style={{ fontSize: '0.95rem' }}>{item.title}</strong>
+                <strong style={{ fontSize: '0.95rem' }}>
+                  {item.title || item.content || 'Untitled Content'}
+                </strong>
               </div>
               <span style={{ fontSize: '0.8rem', color: 'var(--gv-muted)' }}>
                 {new Date(item.created_at).toLocaleDateString()}
