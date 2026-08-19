@@ -1,7 +1,21 @@
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../context/AuthContext';
-import { FaChartLine, FaHeart, FaComment, FaEye, FaEgg, FaNewspaper } from 'react-icons/fa6';
+import { FaChartLine, FaHeart, FaComment, FaEgg, FaNewspaper } from 'react-icons/fa6';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
+};
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -51,19 +65,19 @@ const Dashboard = () => {
           .from('post_likes')
           .select('*', { count: 'exact', head: true })
           .or(filterConditions.join(','));
-        
+
         if (likesError) console.error('Likes query error:', likesError.message);
         else likesCount = count || 0;
       }
 
-      // 4. Count total comments for user's posts & eggs (using public.comments table schema)
+      // 4. Count total comments for user's posts & eggs
       let commentsCount = 0;
       if (filterConditions.length > 0) {
         const { count, error: commentsError } = await supabase
           .from('comments')
           .select('*', { count: 'exact', head: true })
           .or(filterConditions.join(','));
-        
+
         if (commentsError) console.error('Comments query error:', commentsError.message);
         else commentsCount = count || 0;
       }
@@ -97,45 +111,71 @@ const Dashboard = () => {
 
   return (
     <div className="gv-page" style={{ maxWidth: '900px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '2rem' }}>
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        style={{ marginBottom: '2rem' }}
+      >
         <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
           <FaChartLine style={{ color: 'var(--gv-primary)' }} /> Creator Analytics Dashboard
         </h2>
         <p style={{ color: 'var(--gv-muted)', margin: '0.25rem 0 0 0' }}>
           Track performance across your posts, secrets, and audience engagement
         </p>
-      </div>
+      </motion.div>
 
       {/* Analytics Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
-        <div style={{ backgroundColor: 'var(--gv-card)', border: '1px solid var(--gv-border)', borderRadius: '10px', padding: '1.25rem' }}>
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}
+      >
+        <motion.div
+          variants={itemVariants}
+          whileHover={{ y: -4, transition: { duration: 0.2 } }}
+          style={{ backgroundColor: 'var(--gv-card)', border: '1px solid var(--gv-border)', borderRadius: '10px', padding: '1.25rem' }}
+        >
           <span style={{ color: 'var(--gv-muted)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <FaNewspaper style={{ color: 'var(--gv-primary)' }} /> Standard Posts
           </span>
           <h2 style={{ margin: '0.5rem 0 0 0', fontSize: '1.8rem' }}>{metrics.totalPosts}</h2>
-        </div>
+        </motion.div>
 
-        <div style={{ backgroundColor: 'var(--gv-card)', border: '1px solid var(--gv-border)', borderRadius: '10px', padding: '1.25rem' }}>
+        <motion.div
+          variants={itemVariants}
+          whileHover={{ y: -4, transition: { duration: 0.2 } }}
+          style={{ backgroundColor: 'var(--gv-card)', border: '1px solid var(--gv-border)', borderRadius: '10px', padding: '1.25rem' }}
+        >
           <span style={{ color: 'var(--gv-muted)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <FaEgg style={{ color: '#eab308' }} /> Vault Secrets
           </span>
           <h2 style={{ margin: '0.5rem 0 0 0', fontSize: '1.8rem' }}>{metrics.totalEggs}</h2>
-        </div>
+        </motion.div>
 
-        <div style={{ backgroundColor: 'var(--gv-card)', border: '1px solid var(--gv-border)', borderRadius: '10px', padding: '1.25rem' }}>
+        <motion.div
+          variants={itemVariants}
+          whileHover={{ y: -4, transition: { duration: 0.2 } }}
+          style={{ backgroundColor: 'var(--gv-card)', border: '1px solid var(--gv-border)', borderRadius: '10px', padding: '1.25rem' }}
+        >
           <span style={{ color: 'var(--gv-muted)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <FaHeart style={{ color: '#ef4444' }} /> Total Likes
           </span>
           <h2 style={{ margin: '0.5rem 0 0 0', fontSize: '1.8rem' }}>{metrics.totalLikes}</h2>
-        </div>
+        </motion.div>
 
-        <div style={{ backgroundColor: 'var(--gv-card)', border: '1px solid var(--gv-border)', borderRadius: '10px', padding: '1.25rem' }}>
+        <motion.div
+          variants={itemVariants}
+          whileHover={{ y: -4, transition: { duration: 0.2 } }}
+          style={{ backgroundColor: 'var(--gv-card)', border: '1px solid var(--gv-border)', borderRadius: '10px', padding: '1.25rem' }}
+        >
           <span style={{ color: 'var(--gv-muted)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <FaComment style={{ color: '#a855f7' }} /> Replies Received
           </span>
           <h2 style={{ margin: '0.5rem 0 0 0', fontSize: '1.8rem' }}>{metrics.totalComments}</h2>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Activity Timeline */}
       <h3 style={{ marginBottom: '1rem' }}>Published Content Log</h3>
@@ -144,15 +184,21 @@ const Dashboard = () => {
           <p style={{ color: 'var(--gv-muted)', margin: 0 }}>No content created yet. Start posting to view analytics!</p>
         </div>
       ) : (
-        <div style={{ backgroundColor: 'var(--gv-card)', border: '1px solid var(--gv-border)', borderRadius: '10px', overflow: 'hidden' }}>
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          style={{ backgroundColor: 'var(--gv-card)', border: '1px solid var(--gv-border)', borderRadius: '10px', overflow: 'hidden' }}
+        >
           {recentActivity.map((item, index) => (
-            <div
+            <motion.div
               key={`${item.type}-${item.id}`}
+              variants={itemVariants}
               style={{
                 padding: '1rem 1.25rem',
                 borderBottom: index !== recentActivity.length - 1 ? '1px solid var(--gv-border)' : 'none',
                 display: 'flex',
-                justifySpaceBetween: 'space-between',
+                justifyContent: 'space-between',
                 alignItems: 'center',
               }}
             >
@@ -177,9 +223,9 @@ const Dashboard = () => {
               <span style={{ fontSize: '0.8rem', color: 'var(--gv-muted)' }}>
                 {new Date(item.created_at).toLocaleDateString()}
               </span>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
     </div>
   );

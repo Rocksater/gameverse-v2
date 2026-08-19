@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { supabase } from '../services/supabaseClient';
 import CreateCommunityModal from '../components/CreateCommunityModal';
+import { CommunityCardSkeleton } from '../components/Skeleton';
 import { FaPlus, FaUsers, FaMagnifyingGlass } from 'react-icons/fa6';
 
 const Explore = () => {
@@ -9,13 +11,20 @@ const Explore = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const fetchCommunities = async () => {
+  // Server-side search using Supabase pg_trgm GIN index
+  const fetchCommunities = useCallback(async (queryTerm = '') => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('communities')
         .select('*, profiles:created_by(username)')
         .order('created_at', { ascending: false });
+
+      if (queryTerm.trim()) {
+        query = query.or(`name.ilike.%${queryTerm}%,description.ilike.%${queryTerm}%`);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setCommunities(data || []);
@@ -24,20 +33,20 @@ const Explore = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchCommunities();
   }, []);
+
+  // Debounce search input to avoid hitting Supabase on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchCommunities(search);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [search, fetchCommunities]);
 
   const handleCommunityCreated = (newCommunity) => {
     setCommunities((prev) => [newCommunity, ...prev]);
   };
-
-  const filteredCommunities = communities.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.description?.toLowerCase().includes(search.toLowerCase())
-  );
 
   return (
     <div className="gv-page" style={{ maxWidth: '900px', margin: '0 auto' }}>
@@ -47,7 +56,9 @@ const Explore = () => {
           <p style={{ color: 'var(--gv-muted)', margin: '0.25rem 0 0 0' }}>Discover hubs built by fellow gamers</p>
         </div>
 
-        <button
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.96 }}
           onClick={() => setIsModalOpen(true)}
           style={{
             display: 'flex',
@@ -63,7 +74,7 @@ const Explore = () => {
           }}
         >
           <FaPlus /> Create Community
-        </button>
+        </motion.button>
       </div>
 
       {/* Search Input */}
@@ -86,17 +97,21 @@ const Explore = () => {
       </div>
 
       {/* Community Grid */}
-      {loading ? (
-        <p>Loading communities...</p>
-      ) : filteredCommunities.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem', backgroundColor: 'var(--gv-card)', borderRadius: '8px' }}>
-          <p style={{ color: 'var(--gv-muted)', margin: 0 }}>No communities found. Be the first to launch one!</p>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.25rem' }}>
-          {filteredCommunities.map((c) => (
-            <div
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.25rem' }}>
+        {loading ? (
+          Array.from({ length: 6 }).map((_, idx) => <CommunityCardSkeleton key={idx} />)
+        ) : communities.length === 0 ? (
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', backgroundColor: 'var(--gv-card)', borderRadius: '8px' }}>
+            <p style={{ color: 'var(--gv-muted)', margin: 0 }}>No communities found. Be the first to launch one!</p>
+          </div>
+        ) : (
+          communities.map((c) => (
+            <motion.div
               key={c.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25 }}
+              whileHover={{ y: -4 }}
               style={{
                 backgroundColor: 'var(--gv-card)',
                 border: '1px solid var(--gv-border)',
@@ -122,7 +137,8 @@ const Explore = () => {
                   <span style={{ fontSize: '0.8rem', color: 'var(--gv-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                     <FaUsers /> Community
                   </span>
-                  <button
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
                     style={{
                       padding: '0.4rem 0.8rem',
                       borderRadius: '4px',
@@ -135,13 +151,13 @@ const Explore = () => {
                     }}
                   >
                     Explore
-                  </button>
+                  </motion.button>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            </motion.div>
+          ))
+        )}
+      </div>
 
       <CreateCommunityModal
         isOpen={isModalOpen}

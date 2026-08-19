@@ -1,9 +1,23 @@
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import PostCard from '../components/PostCard';
 import CreatePostModal from '../components/CreatePostModal';
 import { FaPlus } from 'react-icons/fa6';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
+};
 
 const Home = () => {
   const { user } = useAuth();
@@ -17,7 +31,7 @@ const Home = () => {
   const fetchFeed = async () => {
     try {
       setLoading(true);
-      
+
       // 1. Fetch standard posts
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
@@ -27,11 +41,11 @@ const Home = () => {
       if (postsError) throw postsError;
 
       // Normalize standard posts so they share a common structure
-      const normalizedPosts = (postsData || []).map(post => ({
+      const normalizedPosts = (postsData || []).map((post) => ({
         ...post,
-        type: 'post', 
+        type: 'post',
         displayTitle: post.title,
-        displayCategory: post.category
+        displayCategory: post.category,
       }));
 
       // 2. Fetch Easter Eggs
@@ -43,7 +57,7 @@ const Home = () => {
       if (eggsError) throw eggsError;
 
       // Normalize Easter Eggs to look like standard posts for the feed
-      const normalizedEggs = (eggsData || []).map(egg => ({
+      const normalizedEggs = (eggsData || []).map((egg) => ({
         id: egg.id,
         user_id: egg.submitted_by,
         title: egg.title,
@@ -52,12 +66,12 @@ const Home = () => {
         created_at: egg.created_at,
         profiles: egg.profiles,
         type: 'easter_egg',
-        originalEggData: egg // Keep original data just in case
+        originalEggData: egg, // Keep original data just in case
       }));
 
       // 3. Merge and Sort by Date
-      const combinedFeed = [...normalizedPosts, ...normalizedEggs].sort((a, b) => 
-        new Date(b.created_at) - new Date(a.created_at)
+      const combinedFeed = [...normalizedPosts, ...normalizedEggs].sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
       );
 
       setFeedItems(combinedFeed);
@@ -75,10 +89,10 @@ const Home = () => {
   const handlePostCreated = (newPost) => {
     // Normalize new post before adding to state
     const normalizedNewPost = {
-       ...newPost,
-       type: 'post',
-       displayTitle: newPost.title,
-       displayCategory: newPost.category
+      ...newPost,
+      type: 'post',
+      displayTitle: newPost.title,
+      displayCategory: newPost.category,
     };
     setFeedItems((prev) => [normalizedNewPost, ...prev]);
   };
@@ -94,16 +108,23 @@ const Home = () => {
     }
   };
 
-  const filteredFeed = selectedCategory === 'All'
-    ? feedItems
-    : feedItems.filter((item) => item.category === selectedCategory);
+  const filteredFeed =
+    selectedCategory === 'All'
+      ? feedItems
+      : feedItems.filter((item) => item.category === selectedCategory);
 
   return (
     <div className="gv-page">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}
+      >
         <h2 style={{ margin: 0 }}>Gaming Feed</h2>
         {user && (
-          <button
+          <motion.button
+            whileTap={{ scale: 0.95 }}
             onClick={() => setIsModalOpen(true)}
             style={{
               display: 'flex',
@@ -119,14 +140,20 @@ const Home = () => {
             }}
           >
             <FaPlus /> Create Post
-          </button>
+          </motion.button>
         )}
-      </div>
+      </motion.div>
 
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+      <motion.div
+        initial={{ opacity: 0, y: -5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+        style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', overflowX: 'auto', paddingBottom: '0.5rem' }}
+      >
         {categories.map((cat) => (
-          <button
+          <motion.button
             key={cat}
+            whileTap={{ scale: 0.95 }}
             onClick={() => setSelectedCategory(cat)}
             style={{
               padding: '0.5rem 1rem',
@@ -139,26 +166,36 @@ const Home = () => {
             }}
           >
             {cat}
-          </button>
+          </motion.button>
         ))}
-      </div>
+      </motion.div>
 
       {loading ? (
         <p>Loading feed...</p>
       ) : filteredFeed.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem', backgroundColor: 'var(--gv-card)', borderRadius: '8px' }}>
-          <p style={{ color: 'var(--gv-muted)', margin: 0 }}>No posts found in this category yet. Be the first to share one!</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          style={{ textAlign: 'center', padding: '3rem', backgroundColor: 'var(--gv-card)', borderRadius: '8px' }}
+        >
+          <p style={{ color: 'var(--gv-muted)', margin: 0 }}>
+            No posts found in this category yet. Be the first to share one!
+          </p>
+        </motion.div>
       ) : (
-        <div>
+        <motion.div
+          key={selectedCategory}
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+        >
           {filteredFeed.map((item) => (
-            <PostCard 
-              key={`${item.type}-${item.id}`} 
-              post={item} 
-              onDelete={() => handleDeletePost(item.id, item.type)} 
-            />
+            <motion.div key={`${item.type}-${item.id}`} variants={itemVariants}>
+              <PostCard post={item} onDelete={() => handleDeletePost(item.id, item.type)} />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
 
       <CreatePostModal

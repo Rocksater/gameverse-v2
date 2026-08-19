@@ -1,7 +1,21 @@
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { supabase } from '../services/supabaseClient';
 import SubmitEasterEggModal from '../components/SubmitEasterEggModal';
 import { FaPlus, FaEgg, FaMagnifyingGlass, FaLocationDot } from 'react-icons/fa6';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
+};
 
 const Trending = () => {
   const [eggs, setEggs] = useState([]);
@@ -59,7 +73,12 @@ const Trending = () => {
 
   return (
     <div className="gv-page" style={{ maxWidth: '850px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}
+      >
         <div>
           <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <FaEgg style={{ color: '#eab308' }} /> Easter Egg Vault
@@ -67,7 +86,8 @@ const Trending = () => {
           <p style={{ color: 'var(--gv-muted)', margin: '0.25rem 0 0 0' }}>Discover hidden secrets, glitches, and gaming lore</p>
         </div>
 
-        <button
+        <motion.button
+          whileTap={{ scale: 0.95 }}
           onClick={() => setIsModalOpen(true)}
           style={{
             display: 'flex',
@@ -83,11 +103,16 @@ const Trending = () => {
           }}
         >
           <FaPlus /> Submit Secret
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       {/* Search & Rarity Controls */}
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+      <motion.div
+        initial={{ opacity: 0, y: -5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+        style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}
+      >
         <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
           <FaMagnifyingGlass style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gv-muted)' }} />
           <input
@@ -108,8 +133,9 @@ const Trending = () => {
 
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {['All', 'Common', 'Rare', 'Legendary'].map((r) => (
-            <button
+            <motion.button
               key={r}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setSelectedRarity(r)}
               style={{
                 padding: '0.5rem 0.9rem',
@@ -121,25 +147,37 @@ const Trending = () => {
               }}
             >
               {r}
-            </button>
+            </motion.button>
           ))}
         </div>
-      </div>
+      </motion.div>
 
       {/* Easter Egg List */}
       {loading ? (
         <p>Unlocking secrets...</p>
       ) : filteredEggs.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem', backgroundColor: 'var(--gv-card)', borderRadius: '8px' }}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          style={{ textAlign: 'center', padding: '3rem', backgroundColor: 'var(--gv-card)', borderRadius: '8px' }}
+        >
           <p style={{ color: 'var(--gv-muted)', margin: 0 }}>No Easter eggs found matching your filters.</p>
-        </div>
+        </motion.div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <motion.div
+          key={selectedRarity}
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+        >
           {filteredEggs.map((egg) => {
             const badge = getRarityBadgeColor(egg.rarity);
             return (
-              <div
+              <motion.div
                 key={egg.id}
+                variants={itemVariants}
+                whileHover={{ y: -3, transition: { duration: 0.2 } }}
                 style={{
                   backgroundColor: 'var(--gv-card)',
                   border: '1px solid var(--gv-border)',
@@ -177,10 +215,10 @@ const Trending = () => {
                 <div style={{ fontSize: '0.75rem', color: 'var(--gv-muted)', borderTop: '1px solid var(--gv-border)', paddingTop: '0.5rem' }}>
                   Submitted by: <strong>{egg.profiles?.username || 'Anonymous Gamer'}</strong>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       )}
 
       <SubmitEasterEggModal

@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
+import DOMPurify from 'dompurify';
+import { motion } from 'framer-motion';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import CommentsModal from './CommentsModal';
 import { FaHeart, FaRegHeart, FaComment, FaTrash } from 'react-icons/fa6';
 
-const PostCard = ({ post, onDelete }) => {
+const PostCard = ({ post, onDelete, onLikeUpdate }) => {
   const { user } = useAuth();
   const isOwner = user?.id === post.user_id;
 
   const [liked, setLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(0);
+  const [likesCount, setLikesCount] = useState(post.likes_count || 0);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
 
   const isEgg = post?.type === 'easter_egg';
@@ -23,7 +25,9 @@ const PostCard = ({ post, onDelete }) => {
           .select('*', { count: 'exact', head: true })
           .eq(idColumn, post.id);
 
-        setLikesCount(count || 0);
+        if (count !== null && count !== undefined) {
+          setLikesCount(count);
+        }
 
         if (user) {
           const { data } = await supabase
@@ -31,12 +35,12 @@ const PostCard = ({ post, onDelete }) => {
             .select('id')
             .eq(idColumn, post.id)
             .eq('user_id', user.id)
-            .single();
+            .maybeSingle();
 
           setLiked(!!data);
         }
       } catch (err) {
-        // Ignored if user hasn't liked
+        // Ignored if user context or query fails
       }
     };
 
@@ -46,29 +50,57 @@ const PostCard = ({ post, onDelete }) => {
   const toggleLike = async () => {
     if (!user) return alert('Please sign in to like posts.');
 
+    // Optimistic UI Update
+    const prevLiked = liked;
+    const prevCount = likesCount;
+    const nextLiked = !prevLiked;
+    const nextCount = nextLiked ? prevCount + 1 : Math.max(0, prevCount - 1);
+
+    setLiked(nextLiked);
+    setLikesCount(nextCount);
+
     try {
-      if (liked) {
-        setLiked(false);
-        setLikesCount((prev) => Math.max(0, prev - 1));
-        await supabase
-          .from('post_likes')
-          .delete()
-          .eq(idColumn, post.id)
-          .eq('user_id', user.id);
+      if (!isEgg) {
+        // Atomic stored procedure for standard posts
+        const { data, error } = await supabase.rpc('toggle_post_like', {
+          target_post_id: post.id,
+          target_user_id: user.id,
+        });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const { liked: serverLiked, new_count: serverCount } = data[0];
+          setLiked(serverLiked);
+          setLikesCount(serverCount);
+          if (onLikeUpdate) onLikeUpdate(post.id, serverCount, serverLiked);
+        }
       } else {
-        setLiked(true);
-        setLikesCount((prev) => prev + 1);
-        await supabase
-          .from('post_likes')
-          .insert([{ [idColumn]: post.id, user_id: user.id }]);
+        // Fallback for Easter Egg items
+        if (prevLiked) {
+          await supabase
+            .from('post_likes')
+            .delete()
+            .eq(idColumn, post.id)
+            .eq('user_id', user.id);
+        } else {
+          await supabase
+            .from('post_likes')
+            .insert([{ [idColumn]: post.id, user_id: user.id }]);
+        }
       }
     } catch (err) {
       console.error('Like toggle failed:', err.message);
+      // Revert optimistic state on error
+      setLiked(prevLiked);
+      setLikesCount(prevCount);
     }
   };
 
   return (
-    <div
+    <motion.div
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
       style={{
         backgroundColor: 'var(--gv-card)',
         border: '1px solid var(--gv-border)',
@@ -92,28 +124,36 @@ const PostCard = ({ post, onDelete }) => {
           </div>
         </div>
 
-        <span
-          style={{
-            backgroundColor: 'rgba(139, 92, 246, 0.15)',
-            color: 'var(--gv-primary)',
-            padding: '0.2rem 0.6rem',
-            borderRadius: '12px',
-            fontSize: '0.75rem',
-            fontWeight: 'bold',
-          }}
-        >
-          {post.category}
-        </span>
+        {post.category && (
+          <span
+            style={{
+              backgroundColor: 'rgba(139, 92, 246, 0.15)',
+              color: 'var(--gv-primary)',
+              padding: '0.2rem 0.6rem',
+              borderRadius: '12px',
+              fontSize: '0.75rem',
+              fontWeight: 'bold',
+            }}
+          >
+            {post.category}
+          </span>
+        )}
       </div>
 
-      <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.15rem' }}>{post.title}</h3>
-      <p style={{ color: 'var(--gv-text)', lineHeight: '1.5', whiteSpace: 'pre-wrap', margin: '0 0 1rem 0' }}>
-        {post.content}
-      </p>
+      {post.title && <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.15rem' }}>{post.title}</h3>}
+
+      {/* XSS-Safe Sanitized Body Content */}
+      <div
+        style={{ color: 'var(--gv-text)', lineHeight: '1.5', margin: '0 0 1rem 0' }}
+        dangerouslySetInnerHTML={{
+          __html: DOMPurify.sanitize(post.content || ''),
+        }}
+      />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid var(--gv-border)' }}>
         <div style={{ display: 'flex', gap: '1.25rem', color: 'var(--gv-muted)', fontSize: '0.9rem' }}>
-          <button
+          <motion.button
+            whileTap={{ scale: 0.85 }}
             onClick={toggleLike}
             style={{
               background: 'none',
@@ -126,24 +166,36 @@ const PostCard = ({ post, onDelete }) => {
               fontWeight: liked ? 'bold' : 'normal',
             }}
           >
-            {liked ? <FaHeart /> : <FaRegHeart />} {likesCount}
-          </button>
-          <button
+            <motion.span
+              key={liked ? 'liked' : 'unliked'}
+              initial={{ scale: 0.6 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+              style={{ display: 'flex', alignItems: 'center' }}
+            >
+              {liked ? <FaHeart /> : <FaRegHeart />}
+            </motion.span>
+            {likesCount}
+          </motion.button>
+
+          <motion.button
+            whileTap={{ scale: 0.92 }}
             onClick={() => setIsCommentsOpen(true)}
             style={{ background: 'none', border: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
           >
             <FaComment /> Reply
-          </button>
+          </motion.button>
         </div>
 
-        {isOwner && (
-          <button
+        {isOwner && onDelete && (
+          <motion.button
+            whileTap={{ scale: 0.85 }}
             onClick={() => onDelete(post.id)}
             style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
             title="Delete Post"
           >
             <FaTrash />
-          </button>
+          </motion.button>
         )}
       </div>
 
@@ -152,7 +204,7 @@ const PostCard = ({ post, onDelete }) => {
         onClose={() => setIsCommentsOpen(false)}
         post={post}
       />
-    </div>
+    </motion.div>
   );
 };
 

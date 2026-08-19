@@ -1,8 +1,22 @@
 import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import PostCard from '../components/PostCard';
 import { FaShieldHalved, FaPenToSquare, FaStar, FaNewspaper, FaEgg } from 'react-icons/fa6';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
+};
 
 const Profile = () => {
   const { user } = useAuth();
@@ -58,7 +72,7 @@ const Profile = () => {
       setStats({
         postsCount: posts?.length || 0,
         eggsCount: eggsCount || 0,
-        likesReceived: (posts?.length || 0) * 5 + (eggsCount || 0) * 10, // Reputation score algorithm
+        likesReceived: (posts?.length || 0) * 5 + (eggsCount || 0) * 10,
       });
     } catch (err) {
       console.error('Error fetching profile:', err.message);
@@ -109,7 +123,10 @@ const Profile = () => {
   return (
     <div className="gv-page" style={{ maxWidth: '850px', margin: '0 auto' }}>
       {/* Header Profile Banner Card */}
-      <div
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
         style={{
           backgroundColor: 'var(--gv-card)',
           border: '1px solid var(--gv-border)',
@@ -117,9 +134,11 @@ const Profile = () => {
           padding: '2rem',
           marginBottom: '2rem',
           position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        <button
+        <motion.button
+          whileTap={{ scale: 0.95 }}
           onClick={() => setIsEditing(!isEditing)}
           style={{
             position: 'absolute',
@@ -138,90 +157,108 @@ const Profile = () => {
           }}
         >
           <FaPenToSquare /> {isEditing ? 'Cancel' : 'Edit Profile'}
-        </button>
+        </motion.button>
 
-        {isEditing ? (
-          <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
-            <h3>Edit Profile</h3>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.3rem' }}>Username</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--gv-border)', backgroundColor: 'var(--gv-bg)', color: 'var(--gv-text)' }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.3rem' }}>Bio</label>
-              <textarea
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                rows="3"
-                style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--gv-border)', backgroundColor: 'var(--gv-bg)', color: 'var(--gv-text)' }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.3rem' }}>Avatar Image URL</label>
-              <input
-                type="url"
-                value={avatarUrl}
-                onChange={(e) => setAvatarUrl(e.target.value)}
-                style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--gv-border)', backgroundColor: 'var(--gv-bg)', color: 'var(--gv-text)' }}
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={saving}
-              style={{ padding: '0.6rem', backgroundColor: 'var(--gv-primary)', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
+        <AnimatePresence mode="wait">
+          {isEditing ? (
+            <motion.form
+              key="edit-form"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25 }}
+              onSubmit={handleUpdateProfile}
+              style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}
             >
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
-          </form>
-        ) : (
-          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <img
-              src={profile?.avatar_url || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + user?.id}
-              alt="Avatar"
-              style={{ width: '90px', height: '90px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--gv-primary)' }}
-            />
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
-                <h2 style={{ margin: 0 }}>{profile?.username || 'Anonymous Gamer'}</h2>
-                <span
-                  style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                    color: rank.color,
-                    padding: '0.25rem 0.75rem',
-                    borderRadius: '12px',
-                    fontSize: '0.75rem',
-                    fontWeight: 'bold',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.3rem',
-                  }}
-                >
-                  <FaShieldHalved /> {rank.title}
-                </span>
+              <h3>Edit Profile</h3>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.3rem' }}>Username</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--gv-border)', backgroundColor: 'var(--gv-bg)', color: 'var(--gv-text)' }}
+                />
               </div>
-              <p style={{ color: 'var(--gv-muted)', margin: '0 0 1rem 0', fontSize: '0.9rem' }}>{bio}</p>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.3rem' }}>Bio</label>
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  rows="3"
+                  style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--gv-border)', backgroundColor: 'var(--gv-bg)', color: 'var(--gv-text)' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.3rem' }}>Avatar Image URL</label>
+                <input
+                  type="url"
+                  value={avatarUrl}
+                  onChange={(e) => setAvatarUrl(e.target.value)}
+                  style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--gv-border)', backgroundColor: 'var(--gv-bg)', color: 'var(--gv-text)' }}
+                />
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                type="submit"
+                disabled={saving}
+                style={{ padding: '0.6rem', backgroundColor: 'var(--gv-primary)', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </motion.button>
+            </motion.form>
+          ) : (
+            <motion.div
+              key="profile-view"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}
+            >
+              <img
+                src={profile?.avatar_url || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + user?.id}
+                alt="Avatar"
+                style={{ width: '90px', height: '90px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--gv-primary)' }}
+              />
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
+                  <h2 style={{ margin: 0 }}>{profile?.username || 'Anonymous Gamer'}</h2>
+                  <span
+                    style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                      color: rank.color,
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '12px',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.3rem',
+                    }}
+                  >
+                    <FaShieldHalved /> {rank.title}
+                  </span>
+                </div>
+                <p style={{ color: 'var(--gv-muted)', margin: '0 0 1rem 0', fontSize: '0.9rem' }}>{bio}</p>
 
-              {/* Stats Bar */}
-              <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.85rem', color: 'var(--gv-muted)' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <FaNewspaper style={{ color: 'var(--gv-primary)' }} /> <strong>{stats.postsCount}</strong> Posts
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <FaEgg style={{ color: '#eab308' }} /> <strong>{stats.eggsCount}</strong> Secrets
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <FaStar style={{ color: '#a855f7' }} /> <strong>{stats.likesReceived}</strong> Rep Points
-                </span>
+                {/* Stats Bar */}
+                <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.85rem', color: 'var(--gv-muted)' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <FaNewspaper style={{ color: 'var(--gv-primary)' }} /> <strong>{stats.postsCount}</strong> Posts
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <FaEgg style={{ color: '#eab308' }} /> <strong>{stats.eggsCount}</strong> Secrets
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <FaStar style={{ color: '#a855f7' }} /> <strong>{stats.likesReceived}</strong> Rep Points
+                  </span>
+                </div>
               </div>
-            </div>
-          </div>
-        )}
-      </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       {/* User Posts Section */}
       <h3 style={{ marginBottom: '1rem' }}>My Activity & Strategy Posts</h3>
@@ -230,9 +267,18 @@ const Profile = () => {
           <p style={{ color: 'var(--gv-muted)', margin: 0 }}>You haven't authored any posts yet.</p>
         </div>
       ) : (
-        userPosts.map((post) => (
-          <PostCard key={post.id} post={post} onDelete={(id) => setUserPosts(prev => prev.filter(p => p.id !== id))} />
-        ))
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+        >
+          {userPosts.map((post) => (
+            <motion.div key={post.id} variants={itemVariants}>
+              <PostCard post={post} onDelete={(id) => setUserPosts((prev) => prev.filter((p) => p.id !== id))} />
+            </motion.div>
+          ))}
+        </motion.div>
       )}
     </div>
   );

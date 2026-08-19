@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabaseClient';
+import { compressToWebP } from '../utils/imageCompressor';
 
 const AccountSettings = () => {
   const { user, signOut } = useAuth();
@@ -29,18 +30,27 @@ const AccountSettings = () => {
     try {
       setUploading(true);
       setError('');
+      setMessage('');
       const file = e.target.files[0];
       if (!file) return;
 
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/${Math.random()}.${fileExt}`;
+      // Compress client image to WebP format before uploading to Storage
+      const compressedWebPFile = await compressToWebP(file, 0.8);
 
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
+      const filePath = `${user.id}/${Date.now()}.webp`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, compressedWebPFile, {
+          contentType: 'image/webp',
+          upsert: true,
+        });
+
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
       setAvatarUrl(data.publicUrl);
-      setMessage('Avatar uploaded successfully!');
+      setMessage('Avatar uploaded and optimized successfully!');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -60,7 +70,7 @@ const AccountSettings = () => {
         username,
         bio,
         avatar_url: avatarUrl,
-        updated_at: new Date().toISOString() // Fixed: converted Date object to ISO string
+        updated_at: new Date().toISOString(),
       });
 
       if (error) throw error;
@@ -81,7 +91,17 @@ const AccountSettings = () => {
       <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <div>
           <label style={{ display: 'block', marginBottom: '0.5rem' }}>Avatar</label>
-          <input type="file" accept="image/*" onChange={handleAvatarUpload} disabled={uploading} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+            {avatarUrl && (
+              <img
+                src={avatarUrl}
+                alt="Avatar Preview"
+                style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover' }}
+              />
+            )}
+            <input type="file" accept="image/*" onChange={handleAvatarUpload} disabled={uploading} />
+          </div>
+          {uploading && <span style={{ fontSize: '0.85rem', color: 'var(--gv-muted)' }}>Compressing & uploading...</span>}
         </div>
 
         <div>

@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import DOMPurify from 'dompurify';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { IoClose } from 'react-icons/io5';
@@ -37,7 +39,57 @@ const CommentsModal = ({ isOpen, onClose, post }) => {
     if (isOpen) fetchComments();
   }, [isOpen, post]);
 
-  if (!isOpen || !post) return null;
+  // Realtime subscription for live post_comments updates (INSERT & DELETE)
+  useEffect(() => {
+    if (!isOpen || !post) return;
+
+    const channel = supabase
+      .channel(`realtime-comments-${post.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'post_comments',
+          filter: `${idColumn}=eq.${post.id}`,
+        },
+        async (payload) => {
+          // Fetch commenter profile details for real-time item broadcast
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('username, avatar_url')
+            .eq('id', payload.new.user_id)
+            .single();
+
+          const incomingComment = {
+            ...payload.new,
+            profiles: profile || { username: 'Gamer' },
+          };
+
+          setComments((prev) => {
+            if (prev.some((c) => c.id === incomingComment.id)) return prev;
+            return [...prev, incomingComment];
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'post_comments',
+          filter: `${idColumn}=eq.${post.id}`,
+        },
+        (payload) => {
+          setComments((prev) => prev.filter((c) => c.id !== payload.old.id));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isOpen, post, idColumn]);
 
   const handleAddComment = async (e) => {
     e.preventDefault();
@@ -45,7 +97,7 @@ const CommentsModal = ({ isOpen, onClose, post }) => {
 
     try {
       setSubmitting(true);
-      
+
       const payload = {
         user_id: user.id,
         content: newComment.trim(),
@@ -60,7 +112,10 @@ const CommentsModal = ({ isOpen, onClose, post }) => {
 
       if (error) throw error;
 
-      setComments((prev) => [...prev, data]);
+      setComments((prev) => {
+        if (prev.some((c) => c.id === data.id)) return prev;
+        return [...prev, data];
+      });
       setNewComment('');
     } catch (err) {
       alert('Failed to post comment: ' + err.message);
@@ -84,121 +139,144 @@ const CommentsModal = ({ isOpen, onClose, post }) => {
   };
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.75)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-        padding: '1rem',
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: 'var(--gv-card)',
-          border: '1px solid var(--gv-border)',
-          borderRadius: '12px',
-          width: '100%',
-          maxWidth: '550px',
-          maxHeight: '80vh',
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'relative',
-        }}
-      >
-        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--gv-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Replies for "{post.title}"</h3>
-          <button
-            onClick={onClose}
-            style={{ background: 'none', border: 'none', color: 'var(--gv-muted)', fontSize: '1.4rem', cursor: 'pointer' }}
+    <AnimatePresence>
+      {isOpen && post && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem',
+          }}
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0, y: 15 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 15 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            style={{
+              backgroundColor: 'var(--gv-card)',
+              border: '1px solid var(--gv-border)',
+              borderRadius: '12px',
+              width: '100%',
+              maxWidth: '550px',
+              maxHeight: '80vh',
+              display: 'flex',
+              flexDirection: 'column',
+              position: 'relative',
+            }}
           >
-            <IoClose />
-          </button>
-        </div>
+            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--gv-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Replies for "{post.title}"</h3>
+              <button
+                onClick={onClose}
+                style={{ background: 'none', border: 'none', color: 'var(--gv-muted)', fontSize: '1.4rem', cursor: 'pointer' }}
+              >
+                <IoClose />
+              </button>
+            </div>
 
-        <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {loading ? (
-            <p style={{ color: 'var(--gv-muted)', textAlign: 'center' }}>Loading comments...</p>
-          ) : comments.length === 0 ? (
-            <p style={{ color: 'var(--gv-muted)', textAlign: 'center' }}>No replies yet. Be the first to join the conversation!</p>
-          ) : (
-            comments.map((comment) => (
-              <div
-                key={comment.id}
+            <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {loading ? (
+                <p style={{ color: 'var(--gv-muted)', textAlign: 'center' }}>Loading comments...</p>
+              ) : comments.length === 0 ? (
+                <p style={{ color: 'var(--gv-muted)', textAlign: 'center' }}>No replies yet. Be the first to join the conversation!</p>
+              ) : (
+                comments.map((comment) => (
+                  <motion.div
+                    key={comment.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    style={{
+                      backgroundColor: 'var(--gv-bg, #0f172a)',
+                      padding: '0.85rem',
+                      borderRadius: '8px',
+                      border: '1px solid var(--gv-border)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <img
+                          src={comment.profiles?.avatar_url || 'https://api.dicebear.com/7.x/bottts/svg?seed=guest'}
+                          alt="Avatar"
+                          style={{ width: '24px', height: '24px', borderRadius: '50%' }}
+                        />
+                        <strong style={{ fontSize: '0.85rem' }}>{comment.profiles?.username || 'Gamer'}</strong>
+                      </div>
+
+                      {user?.id === comment.user_id && (
+                        <button
+                          onClick={() => handleDeleteComment(comment.id)}
+                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem' }}
+                        >
+                          <FaTrash />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* XSS-Safe Sanitized Comment Content */}
+                    <div
+                      style={{ fontSize: '0.9rem', color: 'var(--gv-text)', lineHeight: '1.4' }}
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(comment.content || ''),
+                      }}
+                    />
+                  </motion.div>
+                ))
+              )}
+            </div>
+
+            <form onSubmit={handleAddComment} style={{ padding: '1rem', borderTop: '1px solid var(--gv-border)', display: 'flex', gap: '0.5rem' }}>
+              <input
+                type="text"
+                placeholder="Write a reply..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                disabled={submitting}
                 style={{
-                  backgroundColor: 'var(--gv-bg, #0f172a)',
-                  padding: '0.85rem',
-                  borderRadius: '8px',
+                  flex: 1,
+                  padding: '0.75rem',
+                  borderRadius: '6px',
                   border: '1px solid var(--gv-border)',
+                  backgroundColor: 'var(--gv-bg, #0f172a)',
+                  color: 'var(--gv-text)',
+                }}
+              />
+              <motion.button
+                whileTap={{ scale: 0.94 }}
+                type="submit"
+                disabled={submitting || !newComment.trim()}
+                style={{
+                  padding: '0.75rem 1.25rem',
+                  backgroundColor: 'var(--gv-primary)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <img
-                      src={comment.profiles?.avatar_url || 'https://api.dicebear.com/7.x/bottts/svg?seed=guest'}
-                      alt="Avatar"
-                      style={{ width: '24px', height: '24px', borderRadius: '50%' }}
-                    />
-                    <strong style={{ fontSize: '0.85rem' }}>{comment.profiles?.username || 'Gamer'}</strong>
-                  </div>
-
-                  {user?.id === comment.user_id && (
-                    <button
-                      onClick={() => handleDeleteComment(comment.id)}
-                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem' }}
-                    >
-                      <FaTrash />
-                    </button>
-                  )}
-                </div>
-                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--gv-text)', lineHeight: '1.4' }}>{comment.content}</p>
-              </div>
-            ))
-          )}
-        </div>
-
-        <form onSubmit={handleAddComment} style={{ padding: '1rem', borderTop: '1px solid var(--gv-border)', display: 'flex', gap: '0.5rem' }}>
-          <input
-            type="text"
-            placeholder="Write a reply..."
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            style={{
-              flex: 1,
-              padding: '0.75rem',
-              borderRadius: '6px',
-              border: '1px solid var(--gv-border)',
-              backgroundColor: 'var(--gv-bg, #0f172a)',
-              color: 'var(--gv-text)',
-            }}
-          />
-          <button
-            type="submit"
-            disabled={submitting}
-            style={{
-              padding: '0.75rem 1.25rem',
-              backgroundColor: 'var(--gv-primary)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-            }}
-          >
-            <FaPaperPlane />
-          </button>
-        </form>
-      </div>
-    </div>
+                <FaPaperPlane />
+              </motion.button>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
